@@ -8,6 +8,9 @@
 MPU6050 mpu(Wire);
 BleComboDevice bleCombo("PistolaMaravilla", "EquipoMaravilla", 100);
 
+const int motorpin = 13;
+unsigned long motorStartTime = 0;
+bool motorOn = false;
 const int joyX = 34;
 const int joyY = 35;
 const int btnJoy = 32;
@@ -16,11 +19,14 @@ const int botonBandera = 25;
 const int botonPistola = 27;
 
 void setup() {
+
+
   Serial.begin(115200);
   Wire.begin(21, 22);
   mpu.begin();
   mpu.calcGyroOffsets();
 
+  pinMode (motorpin,OUTPUT);
   pinMode(botonDisparo, INPUT_PULLUP);
   pinMode(botonBandera, INPUT_PULLUP);
   pinMode(botonPistola, INPUT_PULLUP);
@@ -62,12 +68,18 @@ void loop() {
   bleCombo.move(movX, movY);
 }
 
-  if (digitalRead(botonDisparo) == LOW) {
+  if (digitalRead(botonDisparo) == LOW && !motorOn) {
     Serial.println("Boton presionado");
     bleCombo.pressMouse(MOUSE_LEFT);
-  } else {
+    digitalWrite(motorpin, HIGH);
+    motorStartTime = millis();
+    motorOn = true;
+  }
+
+  if (motorOn && millis() - motorStartTime >= 300) { // 300ms de vibración
+    digitalWrite(motorpin, LOW);
+    motorOn = false;
     bleCombo.releaseMouse(MOUSE_LEFT);
-    
   }
 
   int xValue = analogRead(joyX);
